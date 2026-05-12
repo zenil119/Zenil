@@ -42,6 +42,61 @@ const registerUser = async (
     return user;
 };
 
+const loginUser = async (email, password) => {
+    const user = await findUserByEmail(email);
+    console.log('login:>> ', user)
+    if (!user) {
+        throw new Error(
+            "Invalid credentials"
+        );
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password)
+    if (!isPasswordMatch) {
+        throw new Error(
+            "Invalid credentials"
+        );
+    }
+
+    const token = jwt.sign({
+        id: user.id,
+        email: user.email,
+        role: user.role
+    },
+        process.env.JWT_ACCESS_SECRET,
+        {
+            expiresIn: "1d"
+        });
+
+    return {
+        token,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
+    }
+}
+const getProfile =
+    async (userId) => {
+
+        const user =
+            await findUserById(
+                userId
+            );
+
+        if (!user) {
+            throw new Error(
+                "User not found"
+            );
+        }
+
+        return user;
+    };
+
 module.exports = {
-    registerUser
+    registerUser,
+    loginUser,
+    getProfile
 }
