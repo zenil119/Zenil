@@ -59,7 +59,7 @@ const getProjects = async (
         SELECT *
         FROM projects
         WHERE created_by = $1
-        ORDER BY id DESC
+        ORDER BY created_at DESC
     `;
 
     const { rows } =
