@@ -23,3 +23,9 @@ app.use(routes); // <- YE MISSING THA
 app.use(errorMiddleware);
 
 module.exports = app;
+// npm install express pg dotenv bcrypt jsonwebtoken joi cors helmet morgan express-rate-limit cookie-parser compression
+// npm install --save-dev nodemon
+// "scripts": {
+//   "start": "node server.js",
+//   "dev": "nodemon server.js"
+// }
