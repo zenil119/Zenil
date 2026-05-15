@@ -1,4 +1,5 @@
-const { registerUser, loginUser, getProfile } = require("../services/auth.service");
+const authService = require("../services/auth.service");
+const { errorResponse, successResponse } = require("../utils/response");
 const { registerValidation, loginValidation } = require("../validations/auth.validation")
 
 const register = async (req, res) => {
@@ -7,28 +8,28 @@ const register = async (req, res) => {
             req.body
         );
         if (error) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    error.details[0].message,
-            });
+            return errorResponse(
+                res,
+                error.details[0].message,
+                400
+            )
         }
 
         const { email, password, name } = req.body;
-        const user = await registerUser(name, email, password)
+        const user = await authService.registerUser(name, email, password)
         console.log('controller', user)
 
-        return res.status(201).json({
-            success: true,
-            message:
-                "User registered successfully",
-            data: user,
-        })
+        return successResponse(
+            res,
+            "User registered successfully",
+            user,
+            200
+        )
     } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message,
-        });
+        return errorResponse(
+            res,
+            err.message
+        )
     }
 }
 
@@ -40,28 +41,28 @@ const login = async (req, res) => {
         )
 
         if (error) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    error.details[0].message,
-            });
+            return errorResponse(
+                res,
+                error.details[0].message,
+                400
+            )
         }
 
         const { email, password } = req.body
 
-        const login = await loginUser(email, password)
+        const login = await authService.loginUser(email, password)
 
-        return res.status(201).json({
-            success: true,
-            message:
-                "User login successfully",
-            data: login,
-        })
+        return successResponse(
+            res,
+            "User login successfully",
+            login,
+            201
+        )
     } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message,
-        });
+        return errorResponse(
+            res,
+            err.message
+        )
     }
 
 }
@@ -72,21 +73,23 @@ const profile =
         try {
 
             const user =
-                await getProfile(
+                await authService.getProfile(
                     req.user.id
                 );
 
-            return res.status(200).json({
-                success: true,
-                data: user,
-            });
+            return successResponse(
+                res,
+                "User profile details fetch successfully",
+                user,
+                200
+            );
 
         } catch (err) {
 
-            return res.status(500).json({
-                success: false,
-                message: err.message,
-            });
+            return errorResponse(
+                res,
+                err.message
+            )
         }
     };
 

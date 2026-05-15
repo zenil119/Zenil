@@ -6,8 +6,8 @@ const helmet = require("helmet");
 
 const morgan = require("morgan");
 
-const authRoutes =
-  require("./routes/auth.routes");
+const routes = require("./routes/index");
+const errorMiddleware = require("./middlewares/error.middlware");
 
 const app = express();
 
@@ -19,6 +19,7 @@ app.use(helmet());
 
 app.use(morgan("dev"));
 
-app.use("/api/auth", authRoutes);
+app.use(routes); // <- YE MISSING THA
+app.use(errorMiddleware);
 
 module.exports = app;

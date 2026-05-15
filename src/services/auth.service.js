@@ -2,11 +2,7 @@ const bcrypt = require("bcrypt");
 
 const jwt = require("jsonwebtoken");
 
-const {
-    createUser,
-    findUserByEmail,
-    findUserById,
-} = require("../repositories/auth.repository");
+const authRepository = require("../repositories/auth.repository");
 
 const registerUser = async (
     name,
@@ -17,7 +13,7 @@ const registerUser = async (
     // check existing user
 
     const existingUser =
-        await findUserByEmail(email);
+        await authRepository.findUserByEmail(email);
     if (existingUser) {
         throw new Error(
             "Email already exists"
@@ -32,7 +28,7 @@ const registerUser = async (
     // create user
 
     const user =
-        await createUser(
+        await authRepository.createUser(
             name,
             email,
             hashedPassword
@@ -43,7 +39,7 @@ const registerUser = async (
 };
 
 const loginUser = async (email, password) => {
-    const user = await findUserByEmail(email);
+    const user = await authRepository.findUserByEmail(email);
     console.log('login:>> ', user)
     if (!user) {
         throw new Error(
@@ -82,7 +78,7 @@ const getProfile =
     async (userId) => {
 
         const user =
-            await findUserById(
+            await authRepository.findUserById(
                 userId
             );
 
