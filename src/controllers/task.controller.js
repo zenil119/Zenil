@@ -11,7 +11,8 @@ const {
     createTaskValidation,
     updateTaskValidation,
     reorderTaskValidation,
-    moveTaskValidation
+    moveTaskValidation,
+    getTasksValidation
 } = require("../validations/task.validation");
 
 const createTask = async (
@@ -63,13 +64,25 @@ const getTasks = async (
     next
 ) => {
 
+    const { error } = getTasksValidation.validate(req.query)
+
+    if (error) {
+
+        throw {
+            message:
+                error.details[0].message,
+
+            statusCode: 400
+        };
+    }
+
     try {
 
-        const tasks =
-            await taskService.getTasks(
-                req.params.board_id,
-                req.user.id
-            );
+        const tasks = await taskService.getTasks(
+            req.params.board_id,
+            req.user.id,
+            req.query
+        );
 
         return successResponse(
             res,

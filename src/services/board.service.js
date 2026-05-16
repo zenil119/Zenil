@@ -28,6 +28,9 @@ const createBoard = async (
     }
 
     const maxBoardPosition = await boardRepository.getMaxBoardPosion(project_id)
+    if(!maxBoardPosition) {
+        maxBoardPosition.max = 0   
+    }
     const maxPos = maxBoardPosition.max + 1
 
     return await boardRepository.createBoard(

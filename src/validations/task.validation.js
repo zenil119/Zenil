@@ -128,9 +128,60 @@ const moveTaskValidation =
 
     });
 
+const getTasksValidation = Joi.object({
+
+    page: Joi.number()
+        .integer()
+        .min(1)
+        .default(1),
+
+    limit: Joi.number()
+        .integer()
+        .min(1)
+        .max(100)
+        .default(10),
+
+    search: Joi.string()
+        .allow('')
+        .optional(),
+
+    status: Joi.string()
+        .valid(
+            'todo',
+            'in_progress',
+            'done'
+        )
+        .optional(),
+
+    priority: Joi.string()
+        .valid(
+            'low',
+            'medium',
+            'high'
+        )
+        .optional(),
+
+    sort_by: Joi.string()
+        .valid(
+            'position',
+            'created_at',
+            'due_date',
+            'priority'
+        )
+        .default('position'),
+
+    sort_order: Joi.string()
+        .valid(
+            'asc',
+            'desc'
+        )
+        .default('asc')
+
+});
 module.exports = {
     createTaskValidation,
     updateTaskValidation,
     reorderTaskValidation,
-    moveTaskValidation
+    moveTaskValidation,
+    getTasksValidation
 };

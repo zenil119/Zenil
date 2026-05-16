@@ -2,40 +2,49 @@
 
 const taskRepository =
     require("../repositories/task.repositoy");
-    const boardRepository =
+const boardRepository =
     require("../repositories/board.repository");
+const authRepository = require("../repositories/auth.repository")
 
 const createTask = async (
     payload,
     user_id
 ) => {
 
-    const boardOwner = await boardRepository.getBoardById(payload.board_id)
-    if(boardOwner.created_by !== user_id) {
+    const sameTitleTask = await taskRepository.getTaskByTitle(payload.title)
+    console.log('sameTitleTask', sameTitleTask)
+    if (sameTitleTask?.title) {
         throw {
-            message: "you have no access for crrate task",
-            statusCode: 404
+            message: "same name title is exist",
+            statusCode: 409
         };
     }
+    let maxTaskPosition = 0;
 
-    const sameTitleTask  = await taskRepository.boardOwner()
+    const maxtaskCount = await taskRepository.maxtaskCount(payload.board_id)
+    if (!maxtaskCount.max) {
+        maxtaskCount.max = 0
+    }
+    payload.position = maxTaskPosition + 1
+    console.log('payload.position', payload.position)
+    if (payload.assigned_to) {
+        const isaValidUser = await authRepository.findUserById(payload.assigned_to)
+        if (!isaValidUser) {
+            throw ({
+                message: "Assign user mot found",
+                statusCode: 404
 
-    /*
-        ADD LOGIC HERE
+            }
+            )
+        }
+    }
 
-        ✅ duplicate task title check
-
-        ✅ task position logic
-           (new task should go last)
-
-        ✅ assigned user validation
-
-        ✅ due date validation
-
-        ✅ status validation
-
-        ✅ priority validation
-    */
+    if (payload.due_date && new Date(payload.due_date) < new Date()) {
+        throw ({
+            message: "Due date must biiger then today' date",
+            code: 400
+        })
+    }
 
     return await taskRepository.createTask(
         payload,
@@ -45,26 +54,68 @@ const createTask = async (
 
 const getTasks = async (
     board_id,
-    user_id
+    user_id,
+    queryParams
 ) => {
 
+    const {
+        page = 1,
+        limit = 10,
+        search = '',
+        status,
+        priority,
+        sort_by = 'position',
+        sort_order = 'asc'
+    } = queryParams;
+
     /*
-        ADD LOGIC HERE
-
-        ✅ board ownership validation
-
-        ✅ sorting
-
-        ✅ filtering
-
-        ✅ pagination
-
-        ✅ search
+        pagination calculation
     */
+    const offset =
+        (page - 1) * limit;
 
-    return await taskRepository.getTasks(
-        board_id
-    );
+    /*
+        sorting validation
+    */
+    const allowedSortFields = [
+        'position',
+        'created_at',
+        'due_date',
+        'priority'
+    ];
+
+    if (
+        !allowedSortFields.includes(sort_by)
+    ) {
+        throw new Error('Invalid sort field');
+    }
+
+    /*
+        sort order validation
+    */
+    const allowedSortOrder = [
+        'asc',
+        'desc'
+    ];
+
+    if (
+        !allowedSortOrder.includes(
+            sort_order.toLowerCase()
+        )
+    ) {
+        throw new Error('Invalid sort order');
+    }
+
+    return await taskRepository.getTasks({
+        board_id,
+        offset,
+        limit,
+        search,
+        status,
+        priority,
+        sort_by,
+        sort_order
+    });
 };
 
 const getTaskById = async (

@@ -18,12 +18,13 @@ const createTask = async (
             status,
             assigned_to,
             due_date,
-            created_by
+            created_by,
+            position
         )
         VALUES
         (
             $1, $2, $3, $4,
-            $5, $6, $7, $8
+            $5, $6, $7, $8, $9
         )
         RETURNING *
     `;
@@ -36,7 +37,8 @@ const createTask = async (
         payload.status,
         payload.assigned_to,
         payload.due_date,
-        user_id
+        user_id,
+        payload.position
     ];
 
     const { rows } =
@@ -45,19 +47,96 @@ const createTask = async (
     return rows[0];
 };
 
-const getTasks = async (
-    board_id
-) => {
+const getTasks = async ({
+    board_id,
+    offset,
+    limit,
+    search,
+    status,
+    priority,
+    sort_by,
+    sort_order
+}) => {
 
-    const query = `
+    let query = `
         SELECT *
         FROM tasks
         WHERE board_id = $1
-        ORDER BY position ASC
     `;
 
+    const values = [board_id];
+
+    let index = 2;
+
+    /*
+        search
+    */
+    if (search) {
+
+        query += `
+            AND (
+                title ILIKE $${index}
+                OR description ILIKE $${index}
+            )
+        `;
+
+        values.push(`%${search}%`);
+
+        index++;
+
+    }
+
+    /*
+        status filter
+    */
+    if (status) {
+
+        query += `
+            AND status = $${index}
+        `;
+
+        values.push(status);
+
+        index++;
+
+    }
+
+    /*
+        priority filter
+    */
+    if (priority) {
+
+        query += `
+            AND priority = $${index}
+        `;
+
+        values.push(priority);
+
+        index++;
+
+    }
+
+    /*
+        sorting
+    */
+    query += `
+        ORDER BY ${sort_by} ${sort_order}
+    `;
+
+    /*
+        pagination
+    */
+    query += `
+        LIMIT $${index}
+        OFFSET $${index + 1}
+    `;
+
+    values.push(limit);
+
+    values.push(offset);
+
     const { rows } =
-        await pool.query(query, [board_id]);
+        await pool.query(query, values);
 
     return rows;
 };
@@ -106,10 +185,26 @@ const deleteTask = async (
     return rows[0];
 };
 
+const getTaskByTitle = async (title) => {
+    const query = `select title from tasks where title = $1`
+    const values = [title]
+    const { rows } = await pool.query(query, values)
+    return rows && rows[0] || null
+}
+
+const maxtaskCount = async (board_id) => {
+    const query = `select Max(position) from tasks where board_id = $1`;
+    const values = [board_id]
+
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+}
 module.exports = {
     createTask,
     getTasks,
     getTaskById,
     updateTask,
-    deleteTask
+    deleteTask,
+    getTaskByTitle,
+    maxtaskCount
 };
