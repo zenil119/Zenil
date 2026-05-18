@@ -2,6 +2,7 @@
 
 const pool =
     require("../config/db");
+const { reorderTask } = require("../services/task.service");
 
 const createTask = async (
     payload,
@@ -200,6 +201,74 @@ const maxtaskCount = async (board_id) => {
     const { rows } = await pool.query(query, values);
     return rows[0];
 }
+
+const reorderBoard = async (board_id, newPostion) => {
+    const query = `update tasks set postion = position + 1 where board_id = $1 and postion >= $2 returning *`;
+    const values = [board_id, newPostion]
+
+    const { rows } = await pool.query(query, values)
+    return rows[0]
+}
+
+const updateTaskDetails = async (board_id, task_id, newPostion) => {
+    const query = `update tasks set board_id = $1, postion = $2 where task_id = $3 returning *`
+    const values = [board_id, newPostion, task_id]
+
+    await pool.query(query, values)
+}
+
+const reorderCurrentBoardTasks = async (board_id, postion) => {
+    const query = `update tasks set position = position - 1 where board_id = $1 and postion > $2 returning *`;
+    const values = [board_id, postion]
+
+    await pool.query(query, values)
+
+}
+
+const sameBoardTaskReorderDown = async (board_id, newPostion, currentPosition) => {
+    const query = `update tasks set position = position - 1 where board_id = $1 and position > $3 and position <= $2`;
+    const values = [board_id, newPostion, currentPosition,];
+    await pool.query(query, values)
+}
+
+const sameBoardTaskReorderUp = async (board_id, newPostion, currentPosition) => {
+    const query = `select * from set postion + 1 where board_id = $1 and position >= $2 and postion < $3`;
+    const values = [board_id, newPostion, currentPosition];
+
+    await pool.query(query, values)
+}
+
+const createActivityLog = async (
+    task_id,
+    action_type,
+    old_value,
+    new_value,
+    changed_by
+) => {
+
+    const query = `
+        insert into activity_logs
+        (
+            task_id,
+            action_type,
+            old_value,
+            new_value,
+            changed_by
+        )
+        values ($1, $2, $3, $4, $5)
+    `;
+
+    const values = [
+        task_id,
+        action_type,
+        JSON.stringify(old_value),
+        JSON.stringify(new_value),
+        changed_by
+    ];
+
+    await pool.query(query, values);
+}
+
 module.exports = {
     createTask,
     getTasks,
@@ -207,5 +276,11 @@ module.exports = {
     updateTask,
     deleteTask,
     getTaskByTitle,
-    maxtaskCount
+    maxtaskCount,
+    reorderBoard,
+    updateTaskDetails,
+    reorderCurrentBoardTasks,
+    sameBoardTaskReorderDown,
+    sameBoardTaskReorderUp,
+    createActivityLog
 };

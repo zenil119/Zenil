@@ -4,7 +4,8 @@ const taskRepository =
     require("../repositories/task.repositoy");
 const boardRepository =
     require("../repositories/board.repository");
-const authRepository = require("../repositories/auth.repository")
+const authRepository = require("../repositories/auth.repository");
+const pool = require("../config/db");
 
 const createTask = async (
     payload,
@@ -19,13 +20,12 @@ const createTask = async (
             statusCode: 409
         };
     }
-    let maxTaskPosition = 0;
 
     const maxtaskCount = await taskRepository.maxtaskCount(payload.board_id)
     if (!maxtaskCount.max) {
         maxtaskCount.max = 0
     }
-    payload.position = maxTaskPosition + 1
+    payload.position = maxtaskCount.max + 1
     console.log('payload.position', payload.position)
     if (payload.assigned_to) {
         const isaValidUser = await authRepository.findUserById(payload.assigned_to)
@@ -188,18 +188,6 @@ const deleteTask = async (
     user_id
 ) => {
 
-    /*
-        ADD LOGIC HERE
-
-        ✅ ownership validation
-
-        ✅ reorder remaining tasks
-
-        ✅ activity logs
-
-        ✅ transaction
-    */
-
     return await taskRepository.deleteTask(id);
 };
 
@@ -208,25 +196,83 @@ const reorderTask = async (
     user_id
 ) => {
 
-    /*
-        ADD LOGIC HERE
+    const client = await pool.connect();
+    try {
 
-        ✅ ownership validation
+        const getTaskDetails = await taskRepository.getTaskById(
+            payload.task_id
+        );
 
-        ✅ same board reorder logic
+        const oldValues = {
+            board_id: getTaskDetails.board_id,
+            position: getTaskDetails.position
+        };
 
-        ✅ move up logic
+        const newValues = {
+            board_id: payload.board_id,
+            position: payload.destination_position
+        };
 
-        ✅ move down logic
+        if (getTaskDetails.board_id !== payload.board_id) {
 
-        ✅ prevent invalid position
+            await taskRepository.reorderBoard(
+                payload.board_id,
+                payload.destination_position
+            );
 
-        ✅ transaction
+            await taskRepository.reorderCurrentBoardTasks(
+                getTaskDetails.board_id,
+                getTaskDetails.position
+            );
 
-        ✅ activity logs
-    */
+        } else {
 
-    return true;
+            if (
+                payload.destination_position === getTaskDetails.position
+            ) {
+                return getTaskDetails;
+            }
+
+            if (
+                payload.destination_position >
+                getTaskDetails.position
+            ) {
+
+                await taskRepository.sameBoardTaskReorderDown(
+                    getTaskDetails.board_id,
+                    payload.destination_position,
+                    getTaskDetails.position
+                );
+
+            } else {
+
+                await taskRepository.sameBoardTaskReorderUp(
+                    getTaskDetails.board_id,
+                    payload.destination_position,
+                    getTaskDetails.position
+                );
+            }
+        }
+
+        await taskRepository.updateTaskDetails(
+            payload.board_id,
+            payload.task_id,
+            payload.destination_position
+        );
+
+        await activityRepository.createActivityLog(
+            payload.task_id,
+            'task_moved',
+            oldValues,
+            newValues,
+            user_id
+        );
+
+        return true;
+    } catch (err) {
+
+        throw error;
+    }
 };
 
 const moveTask = async (
