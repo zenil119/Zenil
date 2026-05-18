@@ -28,6 +28,7 @@ const createTask = async (
         )
         RETURNING *
     `;
+    console.log("new deployment")
 
     const values = [
         payload.board_id,
