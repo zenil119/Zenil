@@ -22,6 +22,10 @@ app.use(morgan("dev"));
 app.use(routes); // <- YE MISSING THA
 app.use(errorMiddleware);
 
+app.get('/', (req, res) => {
+    res.send('Task Management API Running 🚀')
+})
+
 module.exports = app;
 // npm install express pg dotenv bcrypt jsonwebtoken joi cors helmet morgan express-rate-limit cookie-parser compression
 // npm install --save-dev nodemon
